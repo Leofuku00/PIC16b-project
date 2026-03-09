@@ -27,16 +27,9 @@ class ReviewPreprocessor:
         self.tag_prefix = tag_prefix
         self.labeled_col = labeled_col
 
-    def _ensure_required_columns(self, df):
-        out = df.copy()
-        if self.comment_col not in out.columns:
-            out[self.comment_col] = ""
-        if self.rating_tags_col not in out.columns:
-            out[self.rating_tags_col] = ""
-        return out
-
     @staticmethod
     def _split_tags(series):
+        """Split raw tag strings on '--' and return normalized tag lists."""
         return (
             series.fillna("")
             .astype(str)
@@ -46,6 +39,7 @@ class ReviewPreprocessor:
 
     @staticmethod
     def _safe_tag_name(raw_tag):
+        """Normalize a raw tag into a filesystem/column-safe identifier."""
         safe_tag = re.sub(r"[^0-9A-Za-z]+", "_", raw_tag).strip("_").lower()
         return safe_tag or "unknown"
 
@@ -103,7 +97,8 @@ class ReviewPreprocessor:
 
     def preprocess(self, df):
         """Run the full preprocessing pipeline and return the transformed dataframe."""
-        out = self._ensure_required_columns(df)
+        # Keep a copy so all transforms are side-effect free.
+        out = df.copy()
         out = self.drop_no_comments_rows(out)
         out = self.drop_html_escaped_comments(out)
         out = self.remove_standalone_numbers_from_comments(out)

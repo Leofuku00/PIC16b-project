@@ -52,6 +52,7 @@ class OrdinalLogisticClassifier:
     """Cumulative-link style ordinal classifier using one-vs-threshold logits."""
 
     def __init__(self, min_label: int = 1, max_label: int = 5, random_state: int = 42):
+        """Initialize ordinal label bounds and internal model containers."""
         self.min_label = min_label
         self.max_label = max_label
         self.random_state = random_state
@@ -60,19 +61,14 @@ class OrdinalLogisticClassifier:
         self.constants_: List[float] = []
 
     def fit(self, x: csr_matrix, y: np.ndarray) -> "OrdinalLogisticClassifier":
+        """Fit one binary logistic model per cumulative threshold."""
         self.thresholds_ = list(range(self.min_label, self.max_label))
         self.models_ = []
         self.constants_ = []
 
         for t in self.thresholds_:
             y_bin = (y > t).astype(int)
-            clf = LogisticRegression(
-                solver="saga",
-                penalty="l2",
-                max_iter=2000,
-                random_state=self.random_state,
-                n_jobs=-1,
-            )
+            clf = LogisticRegression(solver="saga", penalty="l2", max_iter=2000, random_state=self.random_state, n_jobs=-1)
             clf.fit(x, y_bin)
             self.models_.append(clf)
             self.constants_.append(-1.0)
@@ -80,6 +76,7 @@ class OrdinalLogisticClassifier:
         return self
 
     def _p_gt_thresholds(self, x: csr_matrix) -> np.ndarray:
+        """Predict probability of class labels being above each threshold."""
         probs = []
         for model, const in zip(self.models_, self.constants_):
             p = model.predict_proba(x)[:, 1]
@@ -87,6 +84,7 @@ class OrdinalLogisticClassifier:
         return np.column_stack(probs)
 
     def predict(self, x: csr_matrix) -> np.ndarray:
+        """Predict the most likely ordinal class for each input row."""
         p_gt = self._p_gt_thresholds(x)
         n = x.shape[0]
         n_classes = self.max_label - self.min_label + 1
