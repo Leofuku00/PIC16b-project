@@ -1,4 +1,4 @@
-"""Shared datatypes and custom estimators for clarity experiments."""
+"""Shared datatypes and custom estimators for rating experiments."""
 
 from dataclasses import dataclass
 from typing import Callable, List
@@ -31,12 +31,13 @@ class FoldEval:
 
 @dataclass
 class RunConfig:
-    """Runtime configuration for dataset paths, CV settings, and outputs."""
+    """Runtime configuration for dataset paths, target column, and outputs."""
 
     input_csv: str
     output_csv: str
     output_cv_folds_csv: str
     output_model_summary_csv: str
+    target_col: str
     k_values: List[int]
     lsvc_safe_k_values: List[int]
     test_size: float
@@ -68,7 +69,13 @@ class OrdinalLogisticClassifier:
 
         for t in self.thresholds_:
             y_bin = (y > t).astype(int)
-            clf = LogisticRegression(solver="saga", penalty="l2", max_iter=2000, random_state=self.random_state, n_jobs=-1)
+            clf = LogisticRegression(
+                solver="saga",
+                penalty="l2",
+                max_iter=2000,
+                random_state=self.random_state,
+                n_jobs=-1,
+            )
             clf.fit(x, y_bin)
             self.models_.append(clf)
             self.constants_.append(-1.0)

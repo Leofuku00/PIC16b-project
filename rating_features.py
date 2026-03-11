@@ -51,13 +51,38 @@ class FeaturePipeline:
     def build_vectorizer() -> TfidfVectorizer:
         """Construct the TF-IDF vectorizer used across experiments."""
         all_stopwords = ENGLISH_STOP_WORDS.union(DOMAIN_STOPWORDS)
-        return TfidfVectorizer(lowercase=True, norm="l2", binary=True, token_pattern=r"(?u)\b\w{3,}\b", strip_accents="unicode", stop_words=list(all_stopwords), ngram_range=(1, 3), min_df=200, max_df=0.6, sublinear_tf=True, max_features=200_000, analyzer="word")
+        return TfidfVectorizer(
+            lowercase=True,
+            norm="l2",
+            binary=True,
+            token_pattern=r"(?u)\b\w{3,}\b",
+            strip_accents="unicode",
+            stop_words=list(all_stopwords),
+            ngram_range=(1, 3),
+            min_df=200,
+            max_df=0.6,
+            sublinear_tf=True,
+            max_features=200_000,
+            analyzer="word",
+        )
 
     def build_nmf(self, k: int) -> NMF:
         """Create the NMF projection model for a requested topic dimension."""
-        return NMF(n_components=k, init="random", random_state=self.random_state, max_iter=800, solver="cd", beta_loss="frobenius")
+        return NMF(
+            n_components=k,
+            init="random",
+            random_state=self.random_state,
+            max_iter=800,
+            solver="cd",
+            beta_loss="frobenius",
+        )
 
-    def fit_transform(self, comments: Sequence[str], tags_block: csr_matrix, k: int) -> Tuple[TfidfVectorizer, NMF, csr_matrix]:
+    def fit_transform(
+        self,
+        comments: Sequence[str],
+        tags_block: csr_matrix,
+        k: int,
+    ) -> Tuple[TfidfVectorizer, NMF, csr_matrix]:
         """Fit vectorizer and NMF on train comments and return combined features."""
         vectorizer = self.build_vectorizer()
         x_tfidf = vectorizer.fit_transform(comments)
@@ -69,7 +94,12 @@ class FeaturePipeline:
         return vectorizer, nmf, x
 
     @staticmethod
-    def transform(comments: Sequence[str], tags_block: csr_matrix, vectorizer: TfidfVectorizer, nmf: NMF) -> csr_matrix:
+    def transform(
+        comments: Sequence[str],
+        tags_block: csr_matrix,
+        vectorizer: TfidfVectorizer,
+        nmf: NMF,
+    ) -> csr_matrix:
         """Transform comments/tags using a fitted vectorizer and NMF model."""
         x_tfidf = vectorizer.transform(comments)
         w = nmf.transform(x_tfidf)

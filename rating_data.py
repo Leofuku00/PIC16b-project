@@ -13,6 +13,10 @@ from rmp_preprocess import ReviewPreprocessor
 class ReviewDatasetManager:
     """Manage input resolution, preprocessing, and grouped data splits."""
 
+    def __init__(self, target_col: str):
+        """Store the supervised target column used for a given experiment."""
+        self.target_col = target_col
+
     @staticmethod
     def resolve_input_csv(path: str) -> str:
         """Resolve relative CSV paths against this module's directory."""
@@ -21,27 +25,28 @@ class ReviewDatasetManager:
             return str(base)
         return str(Path(__file__).resolve().parent / base)
 
-    @staticmethod
-    def clean_reviews(df_raw: pd.DataFrame) -> pd.DataFrame:
+    def clean_reviews(self, df_raw: pd.DataFrame) -> pd.DataFrame:
         """Apply preprocessing and enforce the required modeling schema."""
         processor = ReviewPreprocessor()
         out = processor.preprocess(df_raw)
 
-        out["clarityRating"] = pd.to_numeric(out["clarityRating"], errors="coerce")
-        out = out.dropna(subset=["clarityRating", "profId", "comment_clean"]).copy()
+        if self.target_col not in out.columns:
+            raise KeyError(f"Target column '{self.target_col}' was not found in the input data.")
+
+        out[self.target_col] = pd.to_numeric(out[self.target_col], errors="coerce")
+        out = out.dropna(subset=[self.target_col, "profId", "comment_clean"]).copy()
         out = out[out["comment_clean"].astype(str).str.strip().ne("")].copy()
 
-        out = out[out["clarityRating"].between(1, 5)].copy()
-        out["clarityRating"] = out["clarityRating"].astype(int)
+        out = out[out[self.target_col].between(1, 5)].copy()
+        out[self.target_col] = out[self.target_col].astype(int)
         out["profId"] = out["profId"].astype(str)
         return out
 
-    @classmethod
-    def load_and_validate(cls, input_csv: str, max_rows: int | None) -> pd.DataFrame:
+    def load_and_validate(self, input_csv: str, max_rows: int | None) -> pd.DataFrame:
         """Load raw CSV and return a cleaned dataframe ready for modeling."""
-        resolved_input_csv = cls.resolve_input_csv(input_csv)
+        resolved_input_csv = self.resolve_input_csv(input_csv)
         df_raw = pd.read_csv(resolved_input_csv, nrows=max_rows)
-        return cls.clean_reviews(df_raw)
+        return self.clean_reviews(df_raw)
 
     @staticmethod
     def get_tag_columns(df: pd.DataFrame) -> List[str]:
@@ -49,10 +54,17 @@ class ReviewDatasetManager:
         return sorted([c for c in df.columns if c.startswith("tag_")])
 
     @staticmethod
-    def split_train_test(df: pd.DataFrame, test_size: float, random_state: int) -> Tuple[pd.DataFrame, pd.DataFrame]:
+    def split_train_test(
+        df: pd.DataFrame,
+        test_size: float,
+        random_state: int,
+    ) -> Tuple[pd.DataFrame, pd.DataFrame]:
         """Split data by professor group to avoid train/test leakage."""
         gss = GroupShuffleSplit(n_splits=1, test_size=test_size, random_state=random_state)
         idx = np.arange(len(df))
         groups = df["profId"].to_numpy()
         train_idx, test_idx = next(gss.split(idx, groups=groups))
-        return (df.iloc[train_idx].reset_index(drop=True), df.iloc[test_idx].reset_index(drop=True))
+        return (
+            df.iloc[train_idx].reset_index(drop=True),
+            df.iloc[test_idx].reset_index(drop=True),
+        )
