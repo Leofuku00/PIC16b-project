@@ -54,17 +54,10 @@ class ReviewDatasetManager:
         return sorted([c for c in df.columns if c.startswith("tag_")])
 
     @staticmethod
-    def split_train_test(
-        df: pd.DataFrame,
-        test_size: float,
-        random_state: int,
-    ) -> Tuple[pd.DataFrame, pd.DataFrame]:
+    def split_train_test(df: pd.DataFrame, test_size: float, random_state: int) -> Tuple[pd.DataFrame, pd.DataFrame]:
         """Split data by professor group to avoid train/test leakage."""
         gss = GroupShuffleSplit(n_splits=1, test_size=test_size, random_state=random_state)
         idx = np.arange(len(df))
         groups = df["profId"].to_numpy()
         train_idx, test_idx = next(gss.split(idx, groups=groups))
-        return (
-            df.iloc[train_idx].reset_index(drop=True),
-            df.iloc[test_idx].reset_index(drop=True),
-        )
+        return (df.iloc[train_idx].reset_index(drop=True), df.iloc[test_idx].reset_index(drop=True))

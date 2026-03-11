@@ -68,21 +68,9 @@ class FeaturePipeline:
 
     def build_nmf(self, k: int) -> NMF:
         """Create the NMF projection model for a requested topic dimension."""
-        return NMF(
-            n_components=k,
-            init="random",
-            random_state=self.random_state,
-            max_iter=800,
-            solver="cd",
-            beta_loss="frobenius",
-        )
+        return NMF(n_components=k, init="random", random_state=self.random_state, max_iter=800, solver="cd", beta_loss="frobenius")
 
-    def fit_transform(
-        self,
-        comments: Sequence[str],
-        tags_block: csr_matrix,
-        k: int,
-    ) -> Tuple[TfidfVectorizer, NMF, csr_matrix]:
+    def fit_transform(self, comments: Sequence[str], tags_block: csr_matrix, k: int) -> Tuple[TfidfVectorizer, NMF, csr_matrix]:
         """Fit vectorizer and NMF on train comments and return combined features."""
         vectorizer = self.build_vectorizer()
         x_tfidf = vectorizer.fit_transform(comments)
@@ -90,16 +78,12 @@ class FeaturePipeline:
         nmf = self.build_nmf(k=k)
         w = nmf.fit_transform(x_tfidf)
 
+        # Append structured tag indicators to the learned topic weights.
         x = hstack([csr_matrix(w), tags_block], format="csr")
         return vectorizer, nmf, x
 
     @staticmethod
-    def transform(
-        comments: Sequence[str],
-        tags_block: csr_matrix,
-        vectorizer: TfidfVectorizer,
-        nmf: NMF,
-    ) -> csr_matrix:
+    def transform(comments: Sequence[str], tags_block: csr_matrix, vectorizer: TfidfVectorizer, nmf: NMF) -> csr_matrix:
         """Transform comments/tags using a fitted vectorizer and NMF model."""
         x_tfidf = vectorizer.transform(comments)
         w = nmf.transform(x_tfidf)

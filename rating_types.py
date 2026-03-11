@@ -69,13 +69,7 @@ class OrdinalLogisticClassifier:
 
         for t in self.thresholds_:
             y_bin = (y > t).astype(int)
-            clf = LogisticRegression(
-                solver="saga",
-                penalty="l2",
-                max_iter=2000,
-                random_state=self.random_state,
-                n_jobs=-1,
-            )
+            clf = LogisticRegression(solver="saga", penalty="l2", max_iter=2000, random_state=self.random_state, n_jobs=-1)
             clf.fit(x, y_bin)
             self.models_.append(clf)
             self.constants_.append(-1.0)

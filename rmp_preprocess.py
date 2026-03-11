@@ -1,7 +1,9 @@
 """Preprocessing transforms for raw RateMyProfessor review exports."""
 
 import re
+
 import pandas as pd
+
 
 class ReviewPreprocessor:
     """Preprocess RateMyProfessor-style review data into model-ready features.
@@ -10,15 +12,7 @@ class ReviewPreprocessor:
     `ratingTags`, and adds a boolean label flag indicating whether tags exist.
     """
 
-    def __init__(
-        self,
-        comment_col="comment",
-        rating_tags_col="ratingTags",
-        comment_no_numbers_col="comment_no_numbers",
-        comment_clean_col="comment_clean",
-        tag_prefix="tag",
-        labeled_col="labeled",
-    ):
+    def __init__(self, comment_col="comment", rating_tags_col="ratingTags", comment_no_numbers_col="comment_no_numbers", comment_clean_col="comment_clean", tag_prefix="tag", labeled_col="labeled"):
         """Initialize configurable column names used by the preprocessing steps."""
         self.comment_col = comment_col
         self.rating_tags_col = rating_tags_col
