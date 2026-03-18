@@ -1,6 +1,6 @@
 # PIC16B Project
 
-This project studies RateMyProfessors review data for UC campuses and builds models to predict two review targets:
+This project looks at RateMyProfessors review data for UC campuses and builds models to predict two review targets:
 
 - `clarityRating`
 - `difficultyRating`
